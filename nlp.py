@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pickle
 import nltk
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
@@ -10,19 +11,18 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import classification_report
 
-# Load the dataset
-# newsgroups = fetch_20newsgroups(subset='all', categories=None, remove=('headers', 'footers', 'quotes'))
-# data, labels = newsgroups.data, newsgroups.target
+# Download the required NLTK datasets
+nltk.download('punkt')
+nltk.download('stopwords')
 
 daigt_dataset = pd.read_csv('daigt.csv')
 data, labels = daigt_dataset['text'], daigt_dataset['label']
 
-nltk.download('punkt')
-nltk.download('stopwords')
 
 # Function to preprocess text
 def preprocess_text(text):
     tokens = word_tokenize(text.lower())
+    # use stemmer to get the root of the word
     stemmer = PorterStemmer()
     stop_words = set(stopwords.words('english'))
     return [stemmer.stem(word) for word in tokens if word.isalpha() and word not in stop_words]
@@ -30,7 +30,7 @@ def preprocess_text(text):
 # Preprocess the dataset
 preprocessed_data = [" ".join(preprocess_text(text)) for text in data]
 
-
+# perform tf-idf vectorization
 vectorizer = TfidfVectorizer(max_features=5000)
 features = vectorizer.fit_transform(preprocessed_data)
 
@@ -41,6 +41,10 @@ X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=
 # Initialize and train the KNN model
 knn_model = KNeighborsClassifier(n_neighbors=5)
 knn_model.fit(X_train, y_train)
+
+# Save the model
+with open('models/knn_model.pkl', 'wb') as file:
+    pickle.dump(knn_model, file)
 
 # Predict and evaluate
 predictions = knn_model.predict(X_test)
